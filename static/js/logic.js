@@ -29,6 +29,22 @@ function createMap(quakeLocations) {
     L.control.layers(baseMaps, overlayMaps, {
         collapsed: false
     }).addTo(map);
+
+    // Adds Legend
+    var legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function(map) {
+        var div = L.DomUtil.create('div', 'info legend'),
+            grades = [1, 2, 3, 4, 5],
+            labels = ["0-1", "1-2", "2-3", "3-4", "4-5", "5+"];
+
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML += '<i style="background:' + chooseColor(grades[i]) + '"></i> ' +
+                grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        }
+
+        return div;
+    };
+    legend.addTo(map);
 }
 
 function createCircles(response) {
@@ -44,10 +60,15 @@ function createCircles(response) {
 
     // Loop through the stations array
     for (var i = 0; i < quakes.length; i++) {
-        var quake =  quakes[i].geometry.coordinates;
+        var quake = quakes[i].geometry.coordinates;
 
         // For each station, create a marker and bind a popup with the station's name
-        var Circle = L.marker([quake[1], quake[0]])
+        var Circle = L.circle([quake[1], quake[0]], {
+                fillOpacity: .6,
+                color: chooseColor(quakes[i].properties.mag),
+                fillColor: chooseColor(quakes[i].properties.mag),
+                radius: markerSize(quakes[i].properties.mag)
+            })
             .bindPopup("<h3>" + quakes[i].properties.place + "<h3><h3>Magnitude: " + quakes[i].properties.mag + "</h3>");
 
         // Add the marker to the Circles array
@@ -61,11 +82,18 @@ function createCircles(response) {
 d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/1.0_hour.geojson", createCircles);
 
 //-----------------------------------------------------------//
-// var marker = L.marker([51.5, -0.09]).addTo(mymap);
+function chooseColor(magnitude) {
+    return magnitude > 5 ? "red" :
+        magnitude > 4 ? "orange" :
+        magnitude > 3 ? "gold" :
+        magnitude > 2 ? "yellow" :
+        magnitude > 1 ? "yellowgreen" :
+        "greenyellow"; // <= 1 default
+}
 
-// var circle = L.circle([51.508, -0.11], {
-//     color: 'red',
-//     fillColor: '#f03',
-//     fillOpacity: 0.5,
-//     radius: 500
-// }).addTo(mymap);
+//----------------------------------------------------------------------------
+// Function to amplify circle size by earthquake magnitude
+//----------------------------------------------------------------------------
+function markerSize(magnitude) {
+    return magnitude * 80000;
+}
